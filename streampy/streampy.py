@@ -100,16 +100,25 @@ class StreamPy:
         res = np.concatenate([np.zeros((n - len(res), len(self.columns)), dtype=res.dtype), res])
         return res
 
-    def last_n_days(self):
-        pass
+    def last_n_days_index(self, n: int, include_base: bool = False):
+        self._check_dtype_datetime64()
 
-    def recent_n_days_index(self, n: int, base: np.datetime64) -> np.ndarray:
+        base = self.values[self.length - 1][0]
+        return self.recent_n_days_index(n, base, include_base)
+
+    def recent_n_days_index(self, n: int, base: np.datetime64, include_base: bool = False) -> np.ndarray:
+        self._check_dtype_datetime64()
+
+        begin = base - np.timedelta64(n, "D")
+
+        if include_base:
+            return np.where((self.values >= begin) & (self.values <= base))[0]
+        else:
+            return np.where((self.values >= begin) & (self.values < base))[0]
+
+    def _check_dtype_datetime64(self):
         assert self.dtype in [
             np.datetime64,
             np.dtype("datetime64[D]"),
         ], f"Data type is note datetime, actually {self.dtype}."
         assert len(self.columns) == 1, f"Column size is not 1, column name is actually {self.columns}."
-
-        begin = base - np.timedelta64(n, "D")
-
-        return np.where((self.values >= begin) & (self.values < base))[0]
