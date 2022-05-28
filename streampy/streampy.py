@@ -75,7 +75,7 @@ class StreamPy:
         # Nan は default_value
         array[pd.isnull(array)] = self.default_value
 
-        self.values[self.length : self.length + n_row] = array
+        self.values[self.length : self.length + n_row] = array.astype(self.dtype)
         self.length += n_row
 
     def _grow(self, min_capacity):
@@ -86,7 +86,7 @@ class StreamPy:
         self.values = np.concatenate(
             [
                 self.values,
-                np.empty((new_data_len, len(self.columns)), dtype=self.values.dtype),
+                np.zeros((new_data_len, len(self.columns)), dtype=self.dtype),
             ]
         )
         self.capacity += new_data_len
@@ -99,3 +99,17 @@ class StreamPy:
 
         res = np.concatenate([np.zeros((n - len(res), len(self.columns)), dtype=res.dtype), res])
         return res
+
+    def last_n_days(self):
+        pass
+
+    def recent_n_days_index(self, n: int, base: np.datetime64) -> np.ndarray:
+        assert self.dtype in [
+            np.datetime64,
+            np.dtype("datetime64[D]"),
+        ], f"Data type is note datetime, actually {self.dtype}."
+        assert len(self.columns) == 1, f"Column size is not 1, column name is actually {self.columns}."
+
+        begin = base - np.timedelta64(n, "D")
+
+        return np.where((self.values >= begin) & (self.values < base))[0]

@@ -95,3 +95,29 @@ def test_last_n_large():
     assert res.shape == (3, 2)
     assert res[0][0] == 0.0
     assert res[1][0] == 1.0
+
+
+def test_recent_n_days():
+    s = StreamPy.empty(["Date"], "datetime64[D]", default_value=np.datetime64("NaT"))
+    array = np.array(
+        [
+            ["2022-03-31"],
+            ["2022-04-01"],
+            ["2022-04-02"],
+            ["2022-04-03"],
+            ["2022-04-04"],
+            ["2022-04-05"],
+            ["2022-04-06"],
+            ["2022-04-07"],
+            ["2022-04-08"],
+            ["2022-04-09"],
+            ["2022-04-10"],
+            ["2022-04-11"],
+        ],
+        dtype="datetime64[D]",
+    )
+    s.extend(array)
+
+    res = s.recent_n_days_index(3, np.datetime64("2022-04-08", "D"))
+
+    assert np.array_equal(res, [5, 6, 7])
