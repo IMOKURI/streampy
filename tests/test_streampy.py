@@ -159,6 +159,26 @@ def test_last_n_days_index():
     assert np.array_equal(res, [2, 3, 4])
 
 
+def test_last_n_days_index_not_sort():
+    s = StreamPy.empty(["Date"], "datetime64[D]", default_value=np.datetime64("NaT"))
+    array = np.array(
+        [
+            ["2022-04-01"],
+            ["2022-04-03"],
+            ["2022-03-31"],
+            ["2022-04-05"],
+            ["2022-04-02"],
+            ["2022-04-04"],
+        ],
+        dtype="datetime64[D]",
+    )
+    s.extend(array)
+
+    res = s.last_n_days_index(3)
+
+    assert np.array_equal(res, [1, 4, 5])
+
+
 def test_last_n_days_index_include_base():
     s = StreamPy.empty(["Date"], "datetime64[D]", default_value=np.datetime64("NaT"))
     array = np.array(
@@ -177,3 +197,63 @@ def test_last_n_days_index_include_base():
     res = s.last_n_days_index(3, include_base=True)
 
     assert np.array_equal(res, [2, 3, 4, 5])
+
+
+def test_slice_from_index():
+    s = StreamPy.empty(["Date"], "datetime64[D]", default_value=np.datetime64("NaT"))
+    array = np.array(
+        [
+            ["2022-03-31"],
+            ["2022-04-01"],
+            ["2022-04-02"],
+            ["2022-04-03"],
+            ["2022-04-04"],
+            ["2022-04-05"],
+        ],
+        dtype="datetime64[D]",
+    )
+    s.extend(array)
+
+    res = s.slice_from_index(np.datetime64("2022-04-02", "D"))
+
+    assert np.array_equal(res, [2, 3, 4, 5])
+
+
+def test_slice_until_index():
+    s = StreamPy.empty(["Date"], "datetime64[D]", default_value=np.datetime64("NaT"))
+    array = np.array(
+        [
+            ["2022-03-31"],
+            ["2022-04-01"],
+            ["2022-04-02"],
+            ["2022-04-03"],
+            ["2022-04-04"],
+            ["2022-04-05"],
+        ],
+        dtype="datetime64[D]",
+    )
+    s.extend(array)
+
+    res = s.slice_until_index(np.datetime64("2022-04-02", "D"))
+
+    assert np.array_equal(res, [0, 1])
+
+
+def test_slice_between_index():
+    s = StreamPy.empty(["Date"], "datetime64[D]", default_value=np.datetime64("NaT"))
+    array = np.array(
+        [
+            ["2022-03-31"],
+            ["2022-04-01"],
+            ["2022-04-02"],
+            ["2022-04-03"],
+            ["2022-04-04"],
+            ["2022-04-05"],
+        ],
+        dtype="datetime64[D]",
+    )
+    s.extend(array)
+
+    res = s.slice_between_index(np.datetime64("2022-04-02", "D"), np.datetime64("2022-04-04", "D"))
+
+    assert np.array_equal(res, [2, 3])

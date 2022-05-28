@@ -35,6 +35,7 @@ class StreamPy:
         self.length = length
 
         self.capacity = values.shape[0]
+        self._checked_dtype_datetime = False
 
     def __getitem__(self, item):
         return self.values[item]
@@ -100,25 +101,45 @@ class StreamPy:
         res = np.concatenate([np.zeros((n - len(res), len(self.columns)), dtype=res.dtype), res])
         return res
 
-    def last_n_days_index(self, n: int, include_base: bool = False):
+    def last_n_days_index(self, n: int, include_base: bool = False) -> np.ndarray:
         self._check_dtype_datetime64()
 
-        base = self.values[self.length - 1][0]
+        base = np.nanmax(self.values)
         return self.recent_n_days_index(n, base, include_base)
 
     def recent_n_days_index(self, n: int, base: np.datetime64, include_base: bool = False) -> np.ndarray:
         self._check_dtype_datetime64()
 
         begin = base - np.timedelta64(n, "D")
+        return self.slice_between_index(begin, base, include_base)
 
-        if include_base:
-            return np.where((self.values >= begin) & (self.values <= base))[0]
+    def slice_from_index(self, begin: np.datetime64) -> np.ndarray:
+        self._check_dtype_datetime64()
+
+        return np.where(self.values >= begin)[0]
+
+    def slice_until_index(self, end: np.datetime64, include_end: bool = False) -> np.ndarray:
+        self._check_dtype_datetime64()
+
+        # HACK: Since the initial value is 0 (1970-01-01), if the calculation is done from 0, all initial values are included.
+        begin = np.datetime64("1970-01-02", "D")
+        return self.slice_between_index(begin, end, include_end)
+
+    def slice_between_index(self, begin: np.datetime64, end: np.datetime64, include_end: bool = False) -> np.ndarray:
+        self._check_dtype_datetime64()
+
+        if include_end:
+            return np.where((self.values >= begin) & (self.values <= end))[0]
         else:
-            return np.where((self.values >= begin) & (self.values < base))[0]
+            return np.where((self.values >= begin) & (self.values < end))[0]
 
     def _check_dtype_datetime64(self):
-        assert self.dtype in [
-            np.datetime64,
-            np.dtype("datetime64[D]"),
-        ], f"Data type is note datetime, actually {self.dtype}."
-        assert len(self.columns) == 1, f"Column size is not 1, column name is actually {self.columns}."
+        try:
+            assert self._checked_dtype_datetime
+        except AssertionError:
+            assert self.dtype in [
+                np.datetime64,
+                np.dtype("datetime64[D]"),
+            ], f"Data type is note datetime, actually {self.dtype}."
+            assert len(self.columns) == 1, f"Column size is not 1, column name is actually {self.columns}."
+            self._checked_dtype_datetime = True
